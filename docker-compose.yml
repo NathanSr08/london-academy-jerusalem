@@ -1,0 +1,42 @@
+services:
+  web:
+    build: .
+    restart: always
+    env_file:
+      - .env
+    environment:
+      # Overrides so the app always targets the internal Mongo service,
+      # regardless of what is written in .env.
+      MONGODB_URI: mongodb://db:27017/london_academy
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads_data:/app/uploads
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tgdrive.rule=Host(`budget.aws.uned.live`)"
+      - "traefik.http.routers.tgdrive.entrypoints=websecure"
+      - "traefik.http.routers.tgdrive.tls=true"
+      - "traefik.http.routers.tgdrive.tls.certresolver=myresolver"
+      - "traefik.http.services.tgdrive.loadbalancer.server.port=3000"
+    networks:
+      - admin_default
+      - app_network
+    depends_on:
+      - db
+
+  db:
+    image: mongo:latest
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app_network
+
+networks:
+  admin_default:
+    external: true
+  app_network:
+
+volumes:
+  mongo_data:
+  uploads_data:
